@@ -1,0 +1,50 @@
+version: '3.8'
+
+services:
+  news-backend:
+    build: .
+    container_name: news-backend
+    ports:
+      - "${SERVER_PORT}:${SERVER_PORT}"
+    environment:
+      - SPRING_DATA_MONGODB_URI=mongodb://admin:password@mongodb:27017/newsdb?authSource=admin
+      - SPRING_APPLICATION_NAME=${SPRING_APPLICATION_NAME}
+      - SERVER_PORT=${SERVER_PORT}
+      - JWT_PUBLIC_KEY=${JWT_PUBLIC_KEY_PATH}
+      - JWT_PRIVATE_KEY=${JWT_PRIVATE_KEY_PATH}
+    depends_on:
+      mongodb:
+        condition: service_healthy
+    networks:
+      - news-network
+    restart: unless-stopped
+    env_file:
+      - .env
+
+  mongodb:
+    image: mongo:6.0
+    container_name: news-mongodb
+    ports:
+      - "27017:27017"
+    environment:
+      - MONGO_INITDB_ROOT_USERNAME=${MONGO_INITDB_ROOT_USERNAME}
+      - MONGO_INITDB_ROOT_PASSWORD=${MONGO_INITDB_ROOT_PASSWORD}
+    volumes:
+      - mongodb_data:/data/db
+    networks:
+      - news-network
+    restart: unless-stopped
+    env_file:
+      - .env
+    healthcheck:
+      test: [ "CMD", "mongosh", "--eval", "db.adminCommand('ping')" ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 20s
+
+volumes:
+  mongodb_data:
+
+networks:
+  news-network:
