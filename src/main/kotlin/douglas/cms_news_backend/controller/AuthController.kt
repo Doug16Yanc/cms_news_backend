@@ -2,7 +2,7 @@ package douglas.cms_news_backend.controller
 
 import douglas.cms_news_backend.dto.LoginRequest
 import douglas.cms_news_backend.dto.LoginResponse
-import douglas.cms_news_backend.dto.ResponseUserDto
+import douglas.cms_news_backend.dto.UserDto
 import douglas.cms_news_backend.service.AuthService
 import jakarta.validation.Valid
 import org.springframework.http.ResponseEntity
@@ -24,7 +24,7 @@ class AuthController(
     }
 
     @GetMapping("/me")
-    fun getMe(authentication: Authentication?): ResponseEntity<ResponseUserDto> {
+    fun getMe(authentication: Authentication?): ResponseEntity<UserDto> {
         return ResponseEntity.ok(authentication?.let { authService.getInfo(it) })
     }
 }

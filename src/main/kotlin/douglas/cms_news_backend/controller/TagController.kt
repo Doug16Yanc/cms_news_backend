@@ -1,5 +1,6 @@
 package douglas.cms_news_backend.controller
 
+import douglas.cms_news_backend.dto.TagDto
 import douglas.cms_news_backend.model.Tag
 import douglas.cms_news_backend.model.User
 import douglas.cms_news_backend.service.TagService
@@ -32,7 +33,7 @@ class TagController(
         @RequestParam(defaultValue = "0") page: Int,
         @RequestParam(defaultValue = "10") size: Int,
         @RequestParam(defaultValue = "name") sort: String
-    ): Page<Tag> {
+    ): Page<TagDto> {
         val pageable = PageRequest.of(page, size, Sort.by(sort).ascending())
         return tagService.findAllTags(page, size, sort)
     }
@@ -40,9 +41,9 @@ class TagController(
     @PutMapping("/update-tag/{tagName}")
     @PreAuthorize("hasAuthority('JORNALISTA') or hasAuthority('EDITOR')")
     fun updateTag(
-        @PathVariable tagName : String): ResponseEntity<Tag> {
+        @PathVariable tagName : String): ResponseEntity<String> {
         val tag = tagService.updateTag(tagName)
-        return ResponseEntity.ok(tag)
+        return ResponseEntity.ok().body("Tag " + tag?.name + " atualizada com sucesso.")
     }
 
     @DeleteMapping("delete-tag/{tagName}")

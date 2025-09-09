@@ -2,7 +2,7 @@ package douglas.cms_news_backend.service
 
 import douglas.cms_news_backend.dto.LoginRequest
 import douglas.cms_news_backend.dto.LoginResponse
-import douglas.cms_news_backend.dto.ResponseUserDto
+import douglas.cms_news_backend.dto.UserDto
 import douglas.cms_news_backend.exception.local.BadCredentialsException
 import douglas.cms_news_backend.exception.local.EntityNotFoundException
 import douglas.cms_news_backend.model.User
@@ -49,7 +49,7 @@ class AuthService(
         return jwtEncoder.encode(JwtEncoderParameters.from(claims)).tokenValue
     }
 
-    fun getInfo(authentication: Authentication): ResponseUserDto {
+    fun getInfo(authentication: Authentication): UserDto {
         val jwt = authentication.principal as Jwt
 
         val userIdString = jwt.getClaimAsString("userId")
@@ -60,7 +60,7 @@ class AuthService(
         val currentUser = userService.findUserById(userId)
             ?: throw EntityNotFoundException("User not found!")
 
-        return ResponseUserDto(
+        return UserDto(
             name = currentUser.name,
             email = currentUser.email,
             role = currentUser.role

@@ -1,5 +1,6 @@
 package douglas.cms_news_backend.utils
 
+import douglas.cms_news_backend.dto.UserDto
 import douglas.cms_news_backend.exception.local.EntityNotFoundException
 import douglas.cms_news_backend.model.User
 import douglas.cms_news_backend.service.UserService
@@ -22,7 +23,7 @@ class AuthUtil(private val userService: UserService) {
         val userId = jwt.getClaimAsString("userId")
             ?: throw IllegalArgumentException("userId não encontrado no token")
 
-        return userService.findUserById(ObjectId(userId))
+        return userService.findUserEntityById(ObjectId(userId))
             ?: throw EntityNotFoundException("Usuário não encontrado")
     }
 }

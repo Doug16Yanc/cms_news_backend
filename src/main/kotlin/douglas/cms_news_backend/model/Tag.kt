@@ -2,6 +2,7 @@ package douglas.cms_news_backend.model
 
 import org.bson.types.ObjectId
 import org.springframework.data.annotation.Id
+import org.springframework.data.mongodb.core.mapping.DBRef
 import org.springframework.data.mongodb.core.mapping.Document
 import java.time.LocalDateTime
 
@@ -13,6 +14,9 @@ data class Tag(
     var name: String,
 
     var slug: String,
+
+    @DBRef
+    val author: User? = null,
 
     val createdAt : LocalDateTime = LocalDateTime.now(),
 ) {

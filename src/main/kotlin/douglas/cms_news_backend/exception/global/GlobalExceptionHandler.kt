@@ -35,4 +35,10 @@ class GlobalExceptionHandler {
         val body : ErrorResponse? = e.message?.let { ErrorResponse(it) }
         return ResponseEntity(body, HttpStatus.BAD_REQUEST)
     }
+
+    @ExceptionHandler(AccessDeniedException::class)
+    fun handleAccessDeniedException(e: AccessDeniedException): ResponseEntity<ErrorResponse> {
+        val body : ErrorResponse? = e.message?.let { ErrorResponse(it) }
+        return ResponseEntity(body, HttpStatus.FORBIDDEN)
+    }
 }

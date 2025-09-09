@@ -12,6 +12,8 @@ import java.util.*
 @Repository
 interface CategoryRepository : MongoRepository<Category, ObjectId> {
 
+    fun findCategoryById(categoryId: String): Category
+
     fun findBySlug(slug: String): Optional<Category>
 
     fun findByName(name: String): Category?

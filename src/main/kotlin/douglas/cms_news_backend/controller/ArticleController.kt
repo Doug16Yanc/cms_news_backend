@@ -1,5 +1,6 @@
 package douglas.cms_news_backend.controller
 
+import douglas.cms_news_backend.dto.ArticleDto
 import douglas.cms_news_backend.dto.CreateArticleDTO
 import douglas.cms_news_backend.dto.UpdateArticleDTO
 import douglas.cms_news_backend.model.Article
@@ -27,7 +28,7 @@ class ArticleController(
     @PostMapping("/create-article")
     @PreAuthorize("hasAuthority('JORNALISTA') or hasAuthority('EDITOR')")
     fun createArticle(
-        @RequestBody @Valid dto: CreateArticleDTO): ResponseEntity<Article> {
+        @RequestBody @Valid dto: CreateArticleDTO): ResponseEntity<ArticleDto> {
         val article = articleService.createArticle(dto)
         return ResponseEntity.status(HttpStatus.CREATED).body(article)
     }
@@ -37,7 +38,7 @@ class ArticleController(
     fun updateArticle(
         @PathVariable id: String,
         @RequestBody @Valid dto: UpdateArticleDTO
-    ): ResponseEntity<Article> {
+    ): ResponseEntity<ArticleDto> {
         val article = articleService.updateArticle(id, dto)
         return ResponseEntity.ok(article)
     }
@@ -55,7 +56,7 @@ class ArticleController(
     fun getUserArticles(
         @PathVariable authorId: String,
         @PageableDefault(size = 10, sort = ["publishedDate"], direction = Sort.Direction.DESC) pageable: Pageable
-    ): Page<Article> {
+    ): Page<ArticleDto> {
         val objectId = ObjectId(authorId)
         return articleService.getUserArticles(objectId, pageable)
     }
@@ -64,7 +65,7 @@ class ArticleController(
     fun searchPublishedArticles(
         @RequestParam searchTerm: String,
         @PageableDefault(size = 10, sort = ["publishedDate"], direction = Sort.Direction.DESC) pageable: Pageable
-    ): Page<Article> {
+    ): Page<ArticleDto> {
         val now = LocalDateTime.now()
         return articleService.searchPublishedArticles(now, searchTerm, pageable)
     }
@@ -74,12 +75,12 @@ class ArticleController(
         @RequestParam(required = false) category: String?,
         @RequestParam(required = false) tags: List<String>?,
         @PageableDefault(size = 10, sort = ["publishedDate"], direction = Sort.Direction.DESC) pageable: Pageable
-    ): Page<Article> {
+    ): Page<ArticleDto> {
         return articleService.getPublishedArticles(pageable, category, tags)
     }
 
     @GetMapping("get-by-slug/{slug}")
-    fun getArticleBySlug(@PathVariable slug: String): ResponseEntity<Article> {
+    fun getArticleBySlug(@PathVariable slug: String): ResponseEntity<ArticleDto> {
         val article = articleService.getArticleBySlug(slug)
         return if (article != null) ResponseEntity.ok(article)
         else ResponseEntity.notFound().build()

@@ -1,7 +1,7 @@
 package douglas.cms_news_backend.service
 
 import douglas.cms_news_backend.dto.CreateUserDto
-import douglas.cms_news_backend.dto.ResponseUserDto
+import douglas.cms_news_backend.dto.UserDto
 import douglas.cms_news_backend.exception.local.EntityAlreadyExistsException
 import douglas.cms_news_backend.exception.local.EntityNotFoundException
 import douglas.cms_news_backend.model.Role
@@ -52,15 +52,22 @@ class UserService(
         return user?.let { userRepository.save(it) }
     }
 
-    fun  findUserByEmail(email : String) : ResponseUserDto {
+    fun  findUserByEmail(email : String) : UserDto {
         val foundUser = userRepository.findByEmail(email) ?: throw EntityNotFoundException("Usuário não encontrado.")
 
-        return ResponseUserDto(
+        return UserDto(
             foundUser.name,
             foundUser.email,
-            foundUser.role
+            foundUser.role.name
         )
     }
+
+    fun findUserEntityById(id: ObjectId): User {
+        val foundUser = userRepository.findUserById(id) ?: throw EntityNotFoundException("Usuário não encontrado.")
+
+        return foundUser
+    }
+
 
     fun findUserEntityByEmail(email: String): User {
         val foundUser = userRepository.findByEmail(email) ?: throw EntityNotFoundException("Usuário não encontrado.")
@@ -68,28 +75,46 @@ class UserService(
         return foundUser
     }
 
-    fun findUserById(id : ObjectId) : User {
+    fun findUserById(id : ObjectId) : UserDto {
         val foundUser = userRepository.findUserById(id)
 
-        return foundUser
+        return UserDto(
+            foundUser.name,
+            foundUser.email,
+            foundUser.role.name
+        )
     }
 
-    fun findAllUsers(page: Int, size: Int, sort: String = "name"): Page<User> {
+    fun findAllUsers(page: Int, size: Int, sort: String = "name"): Page<UserDto> {
         val pageable = PageRequest.of(
             page,
             size,
             Sort.by(sort).ascending()
         )
-        return userRepository.findAll(pageable)
+
+        val users : Page<User> = userRepository.findAll(pageable)
+        return users.map {user ->
+            UserDto(
+                name = user.name,
+                email = user.email,
+                role = user.role.name
+            )
+        }
     }
 
-    fun findUsersByRole(roleName: String, page: Int, size: Int, sort: String = "name"): Page<User> {
+    fun findUsersByRole(roleName: String, page: Int, size: Int, sort: String = "name"): Page<UserDto> {
         val pageable = PageRequest.of(
             page,
             size,
             Sort.by(sort).ascending()
         )
-        return userRepository.findByRoleName(roleName, pageable)
+        val users : Page<User> = userRepository.findByRoleName(roleName, pageable)
+        return users.map {user ->
+            UserDto(
+                name = user.name,
+                email = user.email,
+                role = user.role.name
+            )
+        }
     }
-
 }

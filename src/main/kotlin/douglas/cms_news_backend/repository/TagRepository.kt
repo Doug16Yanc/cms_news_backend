@@ -1,5 +1,6 @@
 package douglas.cms_news_backend.repository
 
+import douglas.cms_news_backend.dto.TagDto
 import douglas.cms_news_backend.model.Tag
 import org.bson.types.ObjectId
 import org.springframework.data.domain.Page
@@ -12,6 +13,8 @@ import java.util.*
 interface TagRepository : MongoRepository<Tag, ObjectId> {
 
     fun findBySlug(slug: String): Optional<Tag>
+
+    fun findTagByName(name: String): Tag
 
     fun findByName(name: String): Optional<Tag>
 

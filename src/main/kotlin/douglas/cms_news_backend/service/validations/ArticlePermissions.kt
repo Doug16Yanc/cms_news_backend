@@ -4,7 +4,7 @@ import douglas.cms_news_backend.model.Article
 import douglas.cms_news_backend.model.User
 import douglas.cms_news_backend.service.extensions.isEditor
 import douglas.cms_news_backend.service.extensions.isJournalist
-import org.springframework.security.access.AccessDeniedException
+import douglas.cms_news_backend.exception.local.AccessDeniedException
 
 fun validateArticlePermissions(article: Article, currentUser: User, action: String) {
     if (currentUser.isEditor()) {
@@ -13,7 +13,7 @@ fun validateArticlePermissions(article: Article, currentUser: User, action: Stri
 
     if (currentUser.isJournalist()) {
         if (article.author.id != currentUser.id) {
-            throw org.springframework.security.access.AccessDeniedException("Jornalistas só podem $action seus próprios artigos")
+            throw AccessDeniedException("Jornalistas só podem $action seus próprios artigos")
         }
         return
     }

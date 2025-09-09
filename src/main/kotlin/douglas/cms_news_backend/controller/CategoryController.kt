@@ -1,9 +1,9 @@
 package douglas.cms_news_backend.controller
 
+import douglas.cms_news_backend.dto.CategoryDto
+import douglas.cms_news_backend.dto.CreateOrUpdateCategoryDto
 import douglas.cms_news_backend.model.Category
-import douglas.cms_news_backend.model.User
 import douglas.cms_news_backend.service.CategoryService
-import douglas.cms_news_backend.utils.AuthUtil
 import org.springframework.data.domain.Page
 import org.springframework.data.domain.PageRequest
 import org.springframework.data.domain.Sort
@@ -19,8 +19,8 @@ class CategoryController(
 ) {
     @PostMapping("/create-category/{tagName}")
     @PreAuthorize("hasAuthority('JORNALISTA') or hasAuthority('EDITOR')")
-    fun createTag(@PathVariable tagName : String, @RequestBody category: Category): ResponseEntity<String> {
-        val newTag = categoryService.createCategory(category, tagName)
+    fun createTag(@PathVariable tagName : String, @RequestBody categoryDto: CreateOrUpdateCategoryDto): ResponseEntity<String> {
+        val newTag = categoryService.createCategory(categoryDto, tagName)
 
         return ResponseEntity.status(HttpStatus.CREATED).body("Nova categoria : " + newTag.name + " criada com sucesso!")
     }
@@ -30,17 +30,18 @@ class CategoryController(
         @RequestParam(defaultValue = "0") page: Int,
         @RequestParam(defaultValue = "10") size: Int,
         @RequestParam(defaultValue = "name") sort: String
-    ): Page<Category> {
+    ): Page<CategoryDto> {
         val pageable = PageRequest.of(page, size, Sort.by(sort).ascending())
         return categoryService.findAllCategories(page, size, sort)
     }
 
-    @PutMapping("/update-category/{tagName}")
+    @PutMapping("/update-category/{id}")
     @PreAuthorize("hasAuthority('JORNALISTA') or hasAuthority('EDITOR')")
     fun updateCategory(
-        @RequestBody category: Category,
-    ): ResponseEntity<Category> {
-        val category = categoryService.updateCategory(category)
+        @PathVariable id : String,
+        @RequestBody categoryDto: CreateOrUpdateCategoryDto,
+    ): ResponseEntity<CategoryDto> {
+        val category = categoryService.updateCategory(id, categoryDto)
         return ResponseEntity.ok(category)
     }
 

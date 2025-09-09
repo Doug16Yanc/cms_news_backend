@@ -1,7 +1,7 @@
 package douglas.cms_news_backend.controller
 
 import douglas.cms_news_backend.dto.CreateUserDto
-import douglas.cms_news_backend.dto.ResponseUserDto
+import douglas.cms_news_backend.dto.UserDto
 import douglas.cms_news_backend.model.User
 import douglas.cms_news_backend.service.UserService
 import org.springframework.data.domain.Page
@@ -24,7 +24,7 @@ class UserController(
     }
 
     @GetMapping("/find-user/{email}")
-    fun findUserByEmail(@PathVariable email: String): ResponseEntity<ResponseUserDto> {
+    fun findUserByEmail(@PathVariable email: String): ResponseEntity<UserDto> {
         val user = userService.findUserByEmail(email)
         return ResponseEntity.ok().body(user)
     }
@@ -34,7 +34,7 @@ class UserController(
         @RequestParam(defaultValue = "0") page: Int,
         @RequestParam(defaultValue = "10") size: Int,
         @RequestParam(defaultValue = "name") sort: String
-    ): Page<User> {
+    ): Page<UserDto> {
         val pageable = PageRequest.of(page, size, Sort.by(sort).ascending())
         return userService.findAllUsers(page, size, sort)
     }
@@ -45,7 +45,7 @@ class UserController(
         @RequestParam(defaultValue = "10") size: Int,
         @RequestParam(defaultValue = "name") sort: String,
         @PathVariable roleName: String
-    ): Page<User> {
+    ): Page<UserDto> {
         val pageable = PageRequest.of(page, size, Sort.by(sort).ascending())
         return userService.findUsersByRole(roleName, page, size, sort)
     }

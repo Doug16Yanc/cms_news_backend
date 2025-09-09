@@ -1,10 +1,13 @@
 package douglas.cms_news_backend.service
 
+import douglas.cms_news_backend.dto.ArticleDto
 import douglas.cms_news_backend.dto.CreateArticleDTO
 import douglas.cms_news_backend.dto.UpdateArticleDTO
 import douglas.cms_news_backend.exception.local.BadRequestException
 import douglas.cms_news_backend.exception.local.EntityNotFoundException
+import douglas.cms_news_backend.mapper.ArticleMapper
 import douglas.cms_news_backend.model.Article
+import douglas.cms_news_backend.model.Tag
 import douglas.cms_news_backend.model.User
 import douglas.cms_news_backend.model.enums.ArticleStatus
 import douglas.cms_news_backend.repository.ArticleRepository
@@ -34,7 +37,8 @@ class ArticleService(
     private val tagService: TagService,
     private val mongoTemplate: MongoTemplate,
     private val categoryService: CategoryService,
-    private val authUtil: AuthUtil
+    private val authUtil: AuthUtil,
+    private val articleMapper: ArticleMapper
 ) {
 
     fun generateSlug(word: String): String {
@@ -49,9 +53,9 @@ class ArticleService(
         pageable: Pageable,
         category: String?,
         tags: List<String>?
-    ): Page<Article> {
+    ): Page<ArticleDto> {
         val now = LocalDateTime.now()
-        return when {
+        val articles: Page<Article> = when {
             category != null -> {
                 val categoryId = try {
                     ObjectId(category)
@@ -62,15 +66,23 @@ class ArticleService(
             }
             !tags.isNullOrEmpty() -> {
                 val tagIds = tags.mapNotNull { try { ObjectId(it) } catch (e: IllegalArgumentException) { null } }
-                if (tagIds.isEmpty()) PageImpl(emptyList(), pageable, 0)
+                if (tagIds.isEmpty()) return PageImpl(emptyList(), pageable, 0)
                 else articleRepository.findByTags(now, tagIds, pageable)
             }
             else -> articleRepository.findPublishedArticles(now, pageable)
         }
+
+        val articleDtos = articles.content.map { article ->
+            articleMapper.mapArticleToDto(article)
+        }
+
+        return PageImpl(articleDtos, pageable, articles.totalElements)
     }
 
-    fun getArticleBySlug(slug: String): Article? {
-        return articleRepository.findBySlug(slug).orElse(null)
+        fun getArticleBySlug(slug: String): ArticleDto? {
+        val article = articleRepository.findBySlug(slug).orElse(null)
+
+        return articleMapper.mapArticleToDto(article)
     }
 
     @Transactional
@@ -82,46 +94,51 @@ class ArticleService(
         }
     }
 
-    fun createArticle(dto: CreateArticleDTO): Article? {
+    fun createArticle(dto: CreateArticleDTO): ArticleDto {
         val currentUser = authUtil.getCurrentUser()
+
         if (!currentUser.hasJournalistOrEditorRole()) {
             throw AccessDeniedException("Apenas jornalistas e editores podem criar artigos.")
         }
 
-        val categoryName = try {
-            dto.categoryName
-        } catch (e : BadRequestException) {
-            throw BadRequestException("Nome de categoria inválido.")
-        }
-        val category = categoryService.findByName(categoryName)
+        val category = categoryService.findByName(dto.categoryName)
+            ?: throw BadRequestException("Categoria '${dto.categoryName}' não encontrada.")
 
-        val tagNames = dto.tagNames.mapNotNull { try { it} catch (e: IllegalArgumentException) { null } }
-        if (tagNames.isEmpty()) throw BadRequestException("Pelo menos uma tag válida é obrigatória.")
-        val tags = tagService.findAllByNames(tagNames)
+        val validTags = mutableListOf<Tag>()
+        for (tagName in dto.tagNames) {
+            val trimmedName = tagName.trim()
+            val tag = tagService.findTagByName(trimmedName)
+            if (tag != null) validTags.add(tag)
+        }
+
+        if (validTags.isEmpty()) {
+            throw BadRequestException("Pelo menos uma tag válida é obrigatória.")
+        }
 
         val slug = generateSlug(dto.title)
 
-        val article = category?.let {
-            Article(
-                title = dto.title,
-                slug = slug,
-                subtitle = dto.subtitle,
-                content = dto.content,
-                coverImage = dto.coverImage,
-                articleStatus = dto.articleStatus ?: ArticleStatus.DRAFT,
-                publishedDate = dto.publishedDate ?: LocalDate.now(),
-                author = currentUser,
-                category = it,
-                tags = tags,
-                viewCount = 0,
-                createdAt = LocalDateTime.now(),
-                updatedAt = LocalDateTime.now()
-            )
-        }
-        return article?.let { articleRepository.save(it) }
+        val article = Article(
+            title = dto.title,
+            subtitle = dto.subtitle,
+            content = dto.content,
+            coverImage = dto.coverImage,
+            slug = slug,
+            articleStatus = dto.articleStatus ?: ArticleStatus.DRAFT,
+            publishedDate = dto.publishedDate ?: LocalDate.now(),
+            author = currentUser,
+            category = category,
+            tags = validTags.toMutableList(),
+            viewCount = 0,
+            createdAt = LocalDateTime.now(),
+            updatedAt = LocalDateTime.now()
+        )
+
+        val savedArticle = articleRepository.save(article)
+
+        return articleMapper.mapArticleToDto(savedArticle)
     }
 
-    fun updateArticle(articleId: String, dto: UpdateArticleDTO): Article {
+    fun updateArticle(articleId: String, dto: UpdateArticleDTO): ArticleDto {
         val currentUser = authUtil.getCurrentUser()
 
         val article = articleRepository.findById(ObjectId(articleId))
@@ -160,7 +177,9 @@ class ArticleService(
             }
         }
 
-        return articleRepository.save(updatedArticle)
+        val upatedArticle = articleRepository.save(updatedArticle)
+
+        return articleMapper.mapArticleToDto(upatedArticle)
     }
 
     fun deleteArticle(articleId: String) {
@@ -183,15 +202,25 @@ class ArticleService(
         }
     }
 
-    fun getUserArticles(authorId: ObjectId, pageable: Pageable): Page<Article> {
-        return articleRepository.findByAuthorId(authorId, pageable)
+    fun getUserArticles(authorId: ObjectId, pageable: Pageable): Page<ArticleDto> {
+        val articles = articleRepository.findByAuthorId(authorId, pageable)
+
+        return articles.map { article ->
+            articleMapper.mapArticleToDto(article)
+        }
     }
 
-    fun searchPublishedArticles(currentDate: LocalDateTime, searchTerm: String, pageable: Pageable): Page<Article> {
+    fun searchPublishedArticles(
+        currentDate: LocalDateTime,
+        searchTerm: String,
+        pageable: Pageable
+    ): Page<ArticleDto> {
         if (searchTerm.isBlank()) {
             return PageImpl(emptyList(), pageable, 0)
         }
+
         val escapedSearchTerm = Pattern.quote(searchTerm)
+
         val query = Query(
             Criteria.where("articleStatus").`is`(ArticleStatus.PUBLISHED)
                 .and("publishedDate").lte(currentDate)
@@ -201,8 +230,15 @@ class ArticleService(
                     Criteria.where("subtitle").regex(escapedSearchTerm, "i")
                 )
         )
-        val count = mongoTemplate.count(query, Article::class.java)
-        val results = mongoTemplate.find(query.with(pageable), Article::class.java)
-        return PageImpl(results, pageable, count)
+
+        val total = mongoTemplate.count(query, Article::class.java)
+        val articles = mongoTemplate.find(query.with(pageable), Article::class.java)
+
+        val articleDtos = articles.map { article ->
+            articleMapper.mapArticleToDto(article)
+        }
+
+        return PageImpl(articleDtos, pageable, total)
     }
+
 }
