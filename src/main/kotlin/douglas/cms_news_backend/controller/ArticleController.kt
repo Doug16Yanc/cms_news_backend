@@ -5,6 +5,7 @@ import douglas.cms_news_backend.dto.UpdateArticleDTO
 import douglas.cms_news_backend.model.Article
 import douglas.cms_news_backend.model.User
 import douglas.cms_news_backend.service.ArticleService
+import douglas.cms_news_backend.utils.AuthUtil
 import jakarta.validation.Valid
 import org.bson.types.ObjectId
 import org.springframework.data.domain.Page
@@ -14,47 +15,39 @@ import org.springframework.data.web.PageableDefault
 import org.springframework.http.HttpStatus
 import org.springframework.http.ResponseEntity
 import org.springframework.security.access.prepost.PreAuthorize
-import org.springframework.security.core.Authentication
 import org.springframework.web.bind.annotation.*
 import java.time.LocalDateTime
 
 @RestController
 @RequestMapping("/articles")
 class ArticleController(
-    private val articleService: ArticleService
+    private val articleService: ArticleService,
 ) {
 
     @PostMapping("/create-article")
-    @PreAuthorize("hasRole('JORNALISTA') or hasRole('EDITOR')")
+    @PreAuthorize("hasAuthority('JORNALISTA') or hasAuthority('EDITOR')")
     fun createArticle(
-        @RequestBody @Valid dto: CreateArticleDTO,
-        authentication: Authentication
-    ): ResponseEntity<Article> {
-        val currentUser = authentication.principal as User
-        val article = articleService.createArticle(dto, currentUser)
+        @RequestBody @Valid dto: CreateArticleDTO): ResponseEntity<Article> {
+        val article = articleService.createArticle(dto)
         return ResponseEntity.status(HttpStatus.CREATED).body(article)
     }
 
     @PutMapping("/update-article/{id}")
-    @PreAuthorize("hasRole('JORNALISTA') or hasRole('EDITOR')")
+    @PreAuthorize("hasAuthority('JORNALISTA') or hasAuthority('EDITOR')")
     fun updateArticle(
         @PathVariable id: String,
-        @RequestBody @Valid dto: UpdateArticleDTO,
-        authentication: Authentication
+        @RequestBody @Valid dto: UpdateArticleDTO
     ): ResponseEntity<Article> {
-        val currentUser = authentication.principal as User
-        val article = articleService.updateArticle(id, dto, currentUser)
+        val article = articleService.updateArticle(id, dto)
         return ResponseEntity.ok(article)
     }
 
     @DeleteMapping("delete-article/{id}")
-    @PreAuthorize("hasRole('JORNALISTA') or hasRole('EDITOR')")
+    @PreAuthorize("hasAuthority('JORNALISTA') or hasAuthority('EDITOR')")
     fun deleteArticle(
         @PathVariable id: String,
-        authentication: Authentication
     ): ResponseEntity<Void> {
-        val currentUser = authentication.principal as User
-        articleService.deleteArticle(id, currentUser)
+        articleService.deleteArticle(id)
         return ResponseEntity.noContent().build()
     }
 
@@ -97,5 +90,4 @@ class ArticleController(
         articleService.incrementViewCount(ObjectId(articleId))
         return ResponseEntity.ok().build()
     }
-
 }

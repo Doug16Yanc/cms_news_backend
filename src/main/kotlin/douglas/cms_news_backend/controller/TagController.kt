@@ -1,28 +1,26 @@
 package douglas.cms_news_backend.controller
 
-import douglas.cms_news_backend.dto.UpdateArticleDTO
-import douglas.cms_news_backend.model.Article
 import douglas.cms_news_backend.model.Tag
 import douglas.cms_news_backend.model.User
 import douglas.cms_news_backend.service.TagService
-import jakarta.validation.Valid
+import douglas.cms_news_backend.utils.AuthUtil
 import org.springframework.data.domain.Page
 import org.springframework.data.domain.PageRequest
 import org.springframework.data.domain.Sort
 import org.springframework.http.HttpStatus
 import org.springframework.http.ResponseEntity
 import org.springframework.security.access.prepost.PreAuthorize
-import org.springframework.security.core.Authentication
 import org.springframework.web.bind.annotation.*
 
 @RestController
 @RequestMapping("/tags")
 class TagController(
-    private val tagService: TagService
+    private val tagService: TagService,
+    private val authUtil: AuthUtil
 ) {
 
     @PostMapping("/create-tag/{tagName}")
-    @PreAuthorize("hasRole('JORNALIST') or hasRole('EDITOR')")
+    @PreAuthorize("hasAuthority('JORNALISTA') or hasAuthority('EDITOR')")
     fun createTag(@PathVariable tagName : String): ResponseEntity<String> {
         val newTag = tagService.createTag(tagName)
 
@@ -40,24 +38,19 @@ class TagController(
     }
 
     @PutMapping("/update-tag/{tagName}")
-    @PreAuthorize("hasRole('JOURNALIST') or hasRole('EDITOR')")
+    @PreAuthorize("hasAuthority('JORNALISTA') or hasAuthority('EDITOR')")
     fun updateTag(
-        @PathVariable tagName : String,
-        authentication: Authentication
-    ): ResponseEntity<Tag> {
-        val currentUser = authentication.principal as User
-        val tag = tagService.updateTag(tagName, currentUser)
+        @PathVariable tagName : String): ResponseEntity<Tag> {
+        val tag = tagService.updateTag(tagName)
         return ResponseEntity.ok(tag)
     }
 
     @DeleteMapping("delete-tag/{tagName}")
-    @PreAuthorize("hasRole('JOURNALIST') or hasRole('EDITOR')")
+    @PreAuthorize("hasAuthority('JORNALISTA') or hasAuthority('EDITOR')")
     fun deleteTag(
-        @PathVariable tagName: String,
-        authentication: Authentication
+        @PathVariable tagName: String
     ): ResponseEntity<Void> {
-        val currentUser = authentication.principal as User
-        tagService.deleteTag(tagName, currentUser)
+        tagService.deleteTag(tagName)
         return ResponseEntity.noContent().build()
     }
 }

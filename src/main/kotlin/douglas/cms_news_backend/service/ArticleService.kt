@@ -8,10 +8,9 @@ import douglas.cms_news_backend.model.Article
 import douglas.cms_news_backend.model.User
 import douglas.cms_news_backend.model.enums.ArticleStatus
 import douglas.cms_news_backend.repository.ArticleRepository
-import douglas.cms_news_backend.repository.CategoryRepository
-import douglas.cms_news_backend.repository.TagRepository
 import douglas.cms_news_backend.service.extensions.hasJournalistOrEditorRole
 import douglas.cms_news_backend.service.validations.validateArticlePermissions
+import douglas.cms_news_backend.utils.AuthUtil
 import org.bson.types.ObjectId
 import org.springframework.data.domain.Page
 import org.springframework.data.domain.PageImpl
@@ -34,7 +33,8 @@ class ArticleService(
     private val articleRepository: ArticleRepository,
     private val tagService: TagService,
     private val mongoTemplate: MongoTemplate,
-    private val categoryService: CategoryService
+    private val categoryService: CategoryService,
+    private val authUtil: AuthUtil
 ) {
 
     fun generateSlug(word: String): String {
@@ -82,7 +82,8 @@ class ArticleService(
         }
     }
 
-    fun createArticle(dto: CreateArticleDTO, currentUser : User): Article? {
+    fun createArticle(dto: CreateArticleDTO): Article? {
+        val currentUser = authUtil.getCurrentUser()
         if (!currentUser.hasJournalistOrEditorRole()) {
             throw AccessDeniedException("Apenas jornalistas e editores podem criar artigos.")
         }
@@ -97,10 +98,6 @@ class ArticleService(
         val tagNames = dto.tagNames.mapNotNull { try { it} catch (e: IllegalArgumentException) { null } }
         if (tagNames.isEmpty()) throw BadRequestException("Pelo menos uma tag válida é obrigatória.")
         val tags = tagService.findAllByNames(tagNames)
-
-        val authentication = SecurityContextHolder.getContext().authentication
-        val user = authentication.principal as User
-        if (!user.isEnabled()) throw IllegalStateException("Usuário desativado")
 
         val slug = generateSlug(dto.title)
 
@@ -124,7 +121,9 @@ class ArticleService(
         return article?.let { articleRepository.save(it) }
     }
 
-    fun updateArticle(articleId: String, dto: UpdateArticleDTO, currentUser: User): Article {
+    fun updateArticle(articleId: String, dto: UpdateArticleDTO): Article {
+        val currentUser = authUtil.getCurrentUser()
+
         val article = articleRepository.findById(ObjectId(articleId))
             .orElseThrow { EntityNotFoundException("Artigo não encontrado.") }
 
@@ -164,7 +163,8 @@ class ArticleService(
         return articleRepository.save(updatedArticle)
     }
 
-    fun deleteArticle(articleId: String, currentUser: User) {
+    fun deleteArticle(articleId: String) {
+        val currentUser = authUtil.getCurrentUser()
         val article = articleRepository.findById(ObjectId(articleId))
             .orElseThrow { EntityNotFoundException("Artigo não encontrado") }
 

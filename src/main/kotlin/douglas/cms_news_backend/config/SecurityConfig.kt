@@ -20,6 +20,8 @@ import org.springframework.security.oauth2.jwt.JwtDecoder
 import org.springframework.security.oauth2.jwt.JwtEncoder
 import org.springframework.security.oauth2.jwt.NimbusJwtDecoder
 import org.springframework.security.oauth2.jwt.NimbusJwtEncoder
+import org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationConverter
+import org.springframework.security.oauth2.server.resource.authentication.JwtGrantedAuthoritiesConverter
 import org.springframework.security.web.SecurityFilterChain
 import java.security.interfaces.RSAPrivateKey
 import java.security.interfaces.RSAPublicKey
@@ -39,10 +41,13 @@ class SecurityConfig(
             .csrf { it.disable() }
             .authorizeHttpRequests { authorize ->
                 authorize
-                    .requestMatchers(HttpMethod.POST, "/user/create-user").permitAll()
-                    .requestMatchers(HttpMethod.POST, "/auth/login").permitAll()
-                    .requestMatchers(HttpMethod.GET, "/articles/**").permitAll()
-                    .requestMatchers(HttpMethod.POST, "/roles/create-role/{roleName}").permitAll()
+                    .requestMatchers(
+                        HttpMethod.POST,
+                        "/user/create-user",
+                        "/auth/login",
+                        "/roles/create-role/{roleName}"
+                    ).permitAll()
+                    .requestMatchers(HttpMethod.GET, "/articles/**", "/tags/find-all-tags", "/category/find-all-categories").permitAll()
                     .requestMatchers("/v3/api-docs/**", "/swagger-ui/**", "/swagger-ui.html").permitAll()
                     .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
                     .anyRequest().authenticated()
@@ -67,5 +72,16 @@ class SecurityConfig(
     @Bean
     fun bCryptPasswordEncoder(): BCryptPasswordEncoder {
         return BCryptPasswordEncoder()
+    }
+
+    @Bean
+    fun jwtAuthenticationConverter(): JwtAuthenticationConverter {
+        val grantedAuthoritiesConverter = JwtGrantedAuthoritiesConverter()
+        grantedAuthoritiesConverter.setAuthorityPrefix("")
+        grantedAuthoritiesConverter.setAuthoritiesClaimName("roles")
+
+        val converter = JwtAuthenticationConverter()
+        converter.setJwtGrantedAuthoritiesConverter(grantedAuthoritiesConverter)
+        return converter
     }
 }

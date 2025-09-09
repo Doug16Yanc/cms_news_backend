@@ -14,7 +14,7 @@ data class Category(
 
     var description: String? = null,
 
-    var slug: String,
+    var slug: String? = null,
 
     val createdAt: LocalDateTime? = LocalDateTime.now(),
 

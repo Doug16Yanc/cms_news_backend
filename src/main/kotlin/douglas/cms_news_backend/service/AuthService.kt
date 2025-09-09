@@ -16,7 +16,6 @@ import org.springframework.security.oauth2.jwt.JwtEncoderParameters
 import org.springframework.stereotype.Service
 import java.time.Instant
 
-
 @Service
 class AuthService(
     private val userService: UserService,
@@ -42,7 +41,7 @@ class AuthService(
         val claims = JwtClaimsSet.builder()
             .subject(user.email)
             .claim("userId", user.getIdAsString())
-            .claim("role", user.role.name)
+            .claim("roles", listOf(user.role.name))
             .issuedAt(Instant.now())
             .expiresAt(Instant.now().plusSeconds(3600))
             .build()

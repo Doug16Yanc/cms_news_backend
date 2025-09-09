@@ -1,14 +1,12 @@
 package douglas.cms_news_backend.service
 
 import douglas.cms_news_backend.exception.local.EntityNotFoundException
-import douglas.cms_news_backend.model.Category
 import douglas.cms_news_backend.model.Category.Companion.generateSlug
 import douglas.cms_news_backend.model.Tag
 import douglas.cms_news_backend.model.User
 import douglas.cms_news_backend.repository.TagRepository
-import douglas.cms_news_backend.service.validations.validateArticlePermissions
 import douglas.cms_news_backend.service.validations.validateTagPermissions
-import org.bson.types.ObjectId
+import douglas.cms_news_backend.utils.AuthUtil
 import org.springframework.data.domain.Page
 import org.springframework.data.domain.PageRequest
 import org.springframework.data.domain.Sort
@@ -18,12 +16,12 @@ import java.time.LocalDateTime
 @Service
 class TagService(
     private val tagRepository: TagRepository,
+    private val authUtil: AuthUtil,
 ) {
 
     fun createTag(tagName: String) : Tag {
-        tagName.let {
-            tagRepository.findByName(it)
-                .orElseThrow { EntityNotFoundException("Tag já cadastrada.") }
+        if (tagRepository.findByName(tagName).isPresent) {
+            throw IllegalArgumentException("Tag já cadastrada.")
         }
 
         val slug = generateSlug(tagName)
@@ -35,6 +33,16 @@ class TagService(
         )
 
         return tagRepository.save(newTag)
+    }
+
+    fun findTagByName(name: String): Tag? {
+        val tag = tagRepository.findByName(name)
+
+        if (!tag.isPresent) {
+            throw EntityNotFoundException("Tag não encontrada.")
+        }
+
+        return tag.get()
     }
 
     fun findAllByNames(names: List<String>): List<Tag> {
@@ -50,7 +58,8 @@ class TagService(
         return tagRepository.findAll(pageable)
     }
 
-    fun updateTag(tagName: String, currentUser: User): Tag? {
+    fun updateTag(tagName: String): Tag? {
+        val currentUser = authUtil.getCurrentUser()
         val existingTag = tagName.let {
             tagRepository.findByName(it)
                 .orElseThrow { EntityNotFoundException("Tag não encontrada.") }
@@ -66,7 +75,8 @@ class TagService(
         return existingTag?.let { tagRepository.save(it) }
     }
 
-    fun deleteTag(tagName: String, currentUser: User) {
+    fun deleteTag(tagName: String) {
+        val currentUser = authUtil.getCurrentUser()
         val tag = tagRepository.findByName(tagName)
             .orElseThrow { EntityNotFoundException("Tag não encontrada.") }
 
