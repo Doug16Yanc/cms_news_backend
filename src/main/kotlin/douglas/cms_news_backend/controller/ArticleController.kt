@@ -17,6 +17,7 @@ import org.springframework.http.HttpStatus
 import org.springframework.http.ResponseEntity
 import org.springframework.security.access.prepost.PreAuthorize
 import org.springframework.web.bind.annotation.*
+import org.springframework.web.multipart.MultipartFile
 import java.time.LocalDateTime
 
 @RestController
@@ -25,11 +26,13 @@ class ArticleController(
     private val articleService: ArticleService,
 ) {
 
-    @PostMapping("/create-article")
+    @PostMapping("/create-article", consumes = ["multipart/form-data"])
     @PreAuthorize("hasAuthority('JORNALISTA') or hasAuthority('EDITOR')")
     fun createArticle(
-        @RequestBody @Valid dto: CreateArticleDTO): ResponseEntity<ArticleDto> {
-        val article = articleService.createArticle(dto)
+        @RequestPart("article") @Valid dto: CreateArticleDTO,
+        @RequestPart(value = "picture", required = false) picture: MultipartFile
+    ): ResponseEntity<ArticleDto> {
+        val article = articleService.createArticle(dto, picture)
         return ResponseEntity.status(HttpStatus.CREATED).body(article)
     }
 
@@ -37,9 +40,10 @@ class ArticleController(
     @PreAuthorize("hasAuthority('JORNALISTA') or hasAuthority('EDITOR')")
     fun updateArticle(
         @PathVariable id: String,
-        @RequestBody @Valid dto: UpdateArticleDTO
+        @RequestBody @Valid dto: UpdateArticleDTO,
+        @RequestPart(value = "picture", required = false) picture: MultipartFile
     ): ResponseEntity<ArticleDto> {
-        val article = articleService.updateArticle(id, dto)
+        val article = articleService.updateArticle(id, dto, picture)
         return ResponseEntity.ok(article)
     }
 
