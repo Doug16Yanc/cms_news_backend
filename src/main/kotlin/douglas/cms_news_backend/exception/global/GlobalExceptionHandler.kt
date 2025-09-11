@@ -4,6 +4,7 @@ import douglas.cms_news_backend.exception.local.BadCredentialsException
 import douglas.cms_news_backend.exception.local.BadRequestException
 import douglas.cms_news_backend.exception.local.EntityAlreadyExistsException
 import douglas.cms_news_backend.exception.local.EntityNotFoundException
+import douglas.cms_news_backend.exception.local.FileBadRequestException
 import org.springframework.http.HttpStatus
 import org.springframework.http.ResponseEntity
 import org.springframework.web.bind.annotation.ExceptionHandler
@@ -40,5 +41,11 @@ class GlobalExceptionHandler {
     fun handleAccessDeniedException(e: AccessDeniedException): ResponseEntity<ErrorResponse> {
         val body : ErrorResponse? = e.message?.let { ErrorResponse(it) }
         return ResponseEntity(body, HttpStatus.FORBIDDEN)
+    }
+
+    @ExceptionHandler(FileBadRequestException::class)
+    fun handleFileBadRequestException(e: FileBadRequestException): ResponseEntity<ErrorResponse> {
+        val body : ErrorResponse? = e.message?.let { ErrorResponse(it) }
+        return ResponseEntity(body, HttpStatus.BAD_REQUEST)
     }
 }
