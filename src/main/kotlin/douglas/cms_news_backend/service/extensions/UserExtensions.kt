@@ -15,7 +15,7 @@ fun User.isEditor(): Boolean {
     return this.role.name.equals("EDITOR", ignoreCase = true)
 }
 
-fun User.isVisito() : Boolean {
+fun User.isVisitor() : Boolean {
     return this.role.name.equals("VISITANTE", ignoreCase = true)
 }
 

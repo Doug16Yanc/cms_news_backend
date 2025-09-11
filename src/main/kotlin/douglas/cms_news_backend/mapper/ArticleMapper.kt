@@ -9,6 +9,7 @@ import org.springframework.stereotype.Component
 class ArticleMapper {
     fun mapArticleToDto(article: Article): ArticleDto {
         return ArticleDto(
+            id = article.id,
             title = article.title,
             subtitle = article.subtitle,
             content = article.content,

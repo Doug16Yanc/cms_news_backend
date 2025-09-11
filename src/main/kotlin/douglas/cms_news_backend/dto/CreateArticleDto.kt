@@ -13,8 +13,6 @@ data class CreateArticleDTO(
 
     val content: String,
 
-    val coverImage: String,
-
     val articleStatus: ArticleStatus? = null,
 
     val publishedDate: LocalDate? = null,
