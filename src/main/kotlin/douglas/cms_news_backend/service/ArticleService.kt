@@ -8,7 +8,6 @@ import douglas.cms_news_backend.exception.local.EntityNotFoundException
 import douglas.cms_news_backend.mapper.ArticleMapper
 import douglas.cms_news_backend.model.Article
 import douglas.cms_news_backend.model.Tag
-import douglas.cms_news_backend.model.User
 import douglas.cms_news_backend.model.enums.ArticleStatus
 import douglas.cms_news_backend.repository.ArticleRepository
 import douglas.cms_news_backend.service.extensions.hasJournalistOrEditorRole
@@ -23,12 +22,12 @@ import org.springframework.data.mongodb.core.query.Criteria
 import org.springframework.data.mongodb.core.query.Query
 import org.springframework.scheduling.annotation.Scheduled
 import org.springframework.security.access.AccessDeniedException
-import org.springframework.security.core.context.SecurityContextHolder
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
+import org.springframework.web.multipart.MultipartFile
 import java.time.LocalDate
 import java.time.LocalDateTime
-import java.util.UUID
+import java.util.*
 import java.util.regex.Pattern
 
 @Service
@@ -38,7 +37,8 @@ class ArticleService(
     private val mongoTemplate: MongoTemplate,
     private val categoryService: CategoryService,
     private val authUtil: AuthUtil,
-    private val articleMapper: ArticleMapper
+    private val articleMapper: ArticleMapper,
+    private val cloudinaryService: CloudinaryService
 ) {
 
     fun generateSlug(word: String): String {
@@ -94,7 +94,7 @@ class ArticleService(
         }
     }
 
-    fun createArticle(dto: CreateArticleDTO): ArticleDto {
+    fun createArticle(dto: CreateArticleDTO, picture: MultipartFile): ArticleDto {
         val currentUser = authUtil.getCurrentUser()
 
         if (!currentUser.hasJournalistOrEditorRole()) {
@@ -118,10 +118,12 @@ class ArticleService(
         val slug = generateSlug(dto.title)
 
         val article = Article(
+
             title = dto.title,
             subtitle = dto.subtitle,
             content = dto.content,
-            coverImage = dto.coverImage,
+            coverImage = "",
+            picturePublicId = "",
             slug = slug,
             articleStatus = dto.articleStatus ?: ArticleStatus.DRAFT,
             publishedDate = dto.publishedDate ?: LocalDate.now(),
@@ -133,18 +135,33 @@ class ArticleService(
             updatedAt = LocalDateTime.now()
         )
 
+        if (!picture.isEmpty) {
+            val uploadResult = this.cloudinaryService.uploadFile(picture)
+            article.coverImage = uploadResult.url
+            article.picturePublicId = uploadResult.publicId
+        }
+
         val savedArticle = articleRepository.save(article)
 
         return articleMapper.mapArticleToDto(savedArticle)
     }
 
-    fun updateArticle(articleId: String, dto: UpdateArticleDTO): ArticleDto {
+    fun updateArticle(articleId: String, dto: UpdateArticleDTO, file: MultipartFile): ArticleDto {
         val currentUser = authUtil.getCurrentUser()
 
         val article = articleRepository.findById(ObjectId(articleId))
             .orElseThrow { EntityNotFoundException("Artigo não encontrado.") }
 
         validateArticlePermissions(article, currentUser, "editar")
+
+        if (!file.isEmpty) {
+            if (article.picturePublicId.isNotEmpty()) {
+                this.cloudinaryService.deleteFile(article.picturePublicId)
+            }
+            val uploadResult: CloudinaryService.ImageUploadResult = this.cloudinaryService.uploadFile(file)
+            article.coverImage = uploadResult.url
+            article.picturePublicId = uploadResult.publicId
+        }
 
         val updatedArticle = article.copy(
             title = dto.title ?: article.title,
@@ -188,6 +205,10 @@ class ArticleService(
             .orElseThrow { EntityNotFoundException("Artigo não encontrado") }
 
         validateArticlePermissions(article, currentUser, "excluir")
+
+        if (!article.picturePublicId.isEmpty()) {
+            this.cloudinaryService.deleteFile(article.picturePublicId)
+        }
 
         articleRepository.deleteById(ObjectId(articleId))
     }
