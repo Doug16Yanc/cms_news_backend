@@ -21,7 +21,9 @@ data class Article(
 
     val content : String,
 
-    val coverImage : String,
+    var coverImage : String,
+
+    var picturePublicId : String,
 
     val articleStatus : ArticleStatus,
 
