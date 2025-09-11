@@ -29,6 +29,7 @@ dependencies {
     implementation 'org.jetbrains.kotlin:kotlin-reflect'
     implementation 'com.nimbusds:nimbus-jose-jwt:10.0.2'
     implementation 'org.springdoc:springdoc-openapi-starter-webmvc-ui:2.8.9'
+    implementation 'com.cloudinary:cloudinary-http44:1.39.0'
     testImplementation 'org.springframework.boot:spring-boot-starter-test'
     testImplementation 'org.jetbrains.kotlin:kotlin-test-junit5'
     testImplementation 'org.springframework.security:spring-security-test'
