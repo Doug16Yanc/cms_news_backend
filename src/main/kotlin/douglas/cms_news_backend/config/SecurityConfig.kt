@@ -30,9 +30,9 @@ import java.security.interfaces.RSAPublicKey
 @EnableWebSecurity
 @EnableMethodSecurity
 class SecurityConfig(
-    @Value("\${jwt.public.key}")
+    @param:Value("\${jwt.public.key}")
     private val publicKey: RSAPublicKey,
-    @Value("\${jwt.private.key}")
+    @param:Value("\${jwt.private.key}")
     private val privateKey: RSAPrivateKey
 ) {
     @Bean
@@ -50,7 +50,7 @@ class SecurityConfig(
                     .requestMatchers(HttpMethod.GET, "/articles/get-all-published", "/tags/find-all-tags", "/category/find-all-categories").permitAll()
                     .requestMatchers("/v3/api-docs/**", "/swagger-ui/**", "/swagger-ui.html").permitAll()
                     .requestMatchers(HttpMethod.GET, "/articles/**", "/tags/find-all-tags", "/category/find-all-categories").permitAll()
-                    .requestMatchers("/v3/api-docs/**", "/swagger-ui/**", "/swagger-ui.html", "/docs").permitAll()
+                    .requestMatchers("/v3/api-docs/**", "/swagger-ui/**", "/swagger-ui.html", "/stocks/**", "/docs").permitAll()
                     .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
                     .anyRequest().authenticated()
             }
