@@ -15,8 +15,6 @@ data class CreateArticleDTO(
 
     val articleStatus: ArticleStatus? = null,
 
-    val publishedDate: LocalDate? = null,
-
     val categoryName: String,
 
     val tagNames: List<String>

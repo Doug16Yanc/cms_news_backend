@@ -1,14 +1,12 @@
 package douglas.cms_news_backend.exception.global
 
-import douglas.cms_news_backend.exception.local.BadCredentialsException
-import douglas.cms_news_backend.exception.local.BadRequestException
-import douglas.cms_news_backend.exception.local.EntityAlreadyExistsException
-import douglas.cms_news_backend.exception.local.EntityNotFoundException
-import douglas.cms_news_backend.exception.local.FileBadRequestException
+import douglas.cms_news_backend.exception.local.*
+import org.springframework.data.crossstore.ChangeSetPersister
 import org.springframework.http.HttpStatus
 import org.springframework.http.ResponseEntity
 import org.springframework.web.bind.annotation.ExceptionHandler
 import org.springframework.web.bind.annotation.RestControllerAdvice
+import kotlin.io.AccessDeniedException
 
 @RestControllerAdvice
 class GlobalExceptionHandler {
@@ -45,6 +43,12 @@ class GlobalExceptionHandler {
 
     @ExceptionHandler(FileBadRequestException::class)
     fun handleFileBadRequestException(e: FileBadRequestException): ResponseEntity<ErrorResponse> {
+        val body : ErrorResponse? = e.message?.let { ErrorResponse(it) }
+        return ResponseEntity(body, HttpStatus.BAD_REQUEST)
+    }
+
+    @ExceptionHandler(ApiBrapiProblemException::class)
+    fun handleApiBrapiProblemException(e: ApiBrapiProblemException): ResponseEntity<ErrorResponse> {
         val body : ErrorResponse? = e.message?.let { ErrorResponse(it) }
         return ResponseEntity(body, HttpStatus.BAD_REQUEST)
     }
