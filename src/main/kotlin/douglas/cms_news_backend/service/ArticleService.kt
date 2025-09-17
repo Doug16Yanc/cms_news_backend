@@ -126,7 +126,7 @@ class ArticleService(
             picturePublicId = "",
             slug = slug,
             articleStatus = dto.articleStatus ?: ArticleStatus.DRAFT,
-            publishedDate = dto.publishedDate ?: LocalDate.now(),
+            publishedDate = LocalDate.now(),
             author = currentUser,
             category = category,
             tags = validTags.toMutableList(),

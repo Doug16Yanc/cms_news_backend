@@ -1,8 +1,9 @@
-package douglas.cms_news_backend.config
+package douglas.cms_news_backend.config.cors
 
 import org.springframework.context.annotation.Configuration
 import org.springframework.web.servlet.config.annotation.CorsRegistry
 import org.springframework.web.servlet.config.annotation.WebMvcConfigurer
+
 
 @Configuration
 class CorsConfig : WebMvcConfigurer {

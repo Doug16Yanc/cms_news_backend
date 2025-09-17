@@ -10,8 +10,8 @@ import reactor.core.publisher.Flux
 
 @Repository
 class StockRepository(
-    @param:Value("\${brapi.api-url}") private val apiUrl: String,
-    @param:Value("\${brapi.api-token}") private val apiToken: String,
+    @param:Value("\${brapi.api.url}") private val apiUrl: String,
+    @param:Value("\${brapi.api.key}") private val apiToken: String,
     webClientBuilder: WebClient.Builder
 ) {
     private val limit = 7
