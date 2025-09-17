@@ -90,6 +90,14 @@ class ArticleController(
         else ResponseEntity.notFound().build()
     }
 
+    @GetMapping("/get-by-category/{category}")
+    fun getArticlesByCategory(
+        @PathVariable category: String,
+        @PageableDefault(size = 10, sort = ["publishedDate"], direction = Sort.Direction.DESC) pageable: Pageable
+    ): Page<ArticleDto> {
+        return articleService.getArticlesByCategoryName(category, pageable)
+    }
+
     @PostMapping("/increment-view-count/{articleId}/views")
     fun incrementViewCount(@PathVariable articleId: String): ResponseEntity<Void> {
         articleService.incrementViewCount(ObjectId(articleId))

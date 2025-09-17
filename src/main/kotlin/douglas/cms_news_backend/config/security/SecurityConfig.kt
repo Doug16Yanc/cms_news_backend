@@ -37,6 +37,7 @@ class SecurityConfig(
     fun securityFilterChain(http: HttpSecurity): SecurityFilterChain {
         return http
             .csrf { it.disable() }
+            .cors(Customizer.withDefaults())
             .authorizeHttpRequests { authorize ->
                 authorize
                     .requestMatchers(
@@ -45,7 +46,7 @@ class SecurityConfig(
                         "/auth/login",
                         "/roles/create-role/{roleName}"
                     ).permitAll()
-                    .requestMatchers(HttpMethod.GET, "/articles/get-all-published", "/tags/find-all-tags", "/category/find-all-categories").permitAll()
+                    .requestMatchers(HttpMethod.GET, "/articles/get-all-published", "articles/get-by-category/{category}", "/tags/find-all-tags", "/category/find-all-categories").permitAll()
                     .requestMatchers("/v3/api-docs/**", "/swagger-ui/**", "/swagger-ui.html").permitAll()
                     .requestMatchers(HttpMethod.GET, "/articles/**", "/tags/find-all-tags", "/category/find-all-categories").permitAll()
                     .requestMatchers("/v3/api-docs/**", "/swagger-ui/**", "/swagger-ui.html", "/stocks/**", "/docs").permitAll()

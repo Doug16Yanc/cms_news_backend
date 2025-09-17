@@ -22,6 +22,8 @@ interface ArticleRepository : MongoRepository<Article, ObjectId> {
 
     fun findByAuthorId(authorId: ObjectId, pageable: Pageable): Page<Article>
 
+    fun findAllByCategoryAndPublishedDateBefore(category: String, publishedDate: LocalDateTime, pageable: Pageable): Page<Article>
+
     @Query("{ 'category.\$id': ?0 }")
     fun findByCategoryId(categoryId: ObjectId, pageable: Pageable): Page<Article>
 
