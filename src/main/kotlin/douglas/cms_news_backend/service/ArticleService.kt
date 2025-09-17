@@ -85,6 +85,18 @@ class ArticleService(
         return articleMapper.mapArticleToDto(article)
     }
 
+    fun getArticlesByCategoryName(categoryName: String, pageable: Pageable): Page<ArticleDto> {
+        val category = categoryService.findByName(categoryName)
+            ?: throw EntityNotFoundException("Categoria não encontrada")
+        return getPublishedArticlesByCategory(category.id.toString(), pageable)
+    }
+
+    fun getPublishedArticlesByCategory(category: String, pageable: Pageable): Page<ArticleDto> {
+        val now = LocalDateTime.now()
+        val articles: Page<Article> = articleRepository.findAllByCategoryAndPublishedDateBefore(category, now, pageable)
+        return articles.map { article -> articleMapper.mapArticleToDto(article) }
+    }
+
     @Transactional
     fun incrementViewCount(articleId: ObjectId) {
         val article = articleRepository.findById(articleId).orElse(null)
