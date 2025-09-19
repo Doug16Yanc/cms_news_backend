@@ -8,6 +8,7 @@ import douglas.cms_news_backend.dto.stocks.StockDetails
 import douglas.cms_news_backend.dto.stocks.StockSummary
 import douglas.cms_news_backend.repository.StockRepository
 import org.springframework.stereotype.Service
+import reactor.core.publisher.Flux
 import java.time.Instant
 import java.time.ZoneId
 import java.time.format.DateTimeFormatter
@@ -16,7 +17,6 @@ import java.time.format.DateTimeFormatter
 class StockService(
     private val stockRepository: StockRepository
 ) {
-
     fun getExpensiveStocksSummary(): List<StockDetails> {
         val codes = stockRepository.fetchStockCodes(sortBy = "close", sortOrder = "desc")
         val details = stockRepository.findStocksDetails(codes)
