@@ -1,5 +1,6 @@
 package douglas.cms_news_backend.service
 
+import com.cloudinary.provisioning.Account
 import douglas.cms_news_backend.dto.ArticleDto
 import douglas.cms_news_backend.dto.CreateArticleDTO
 import douglas.cms_news_backend.dto.UpdateArticleDTO
@@ -7,9 +8,11 @@ import douglas.cms_news_backend.exception.local.BadRequestException
 import douglas.cms_news_backend.exception.local.EntityNotFoundException
 import douglas.cms_news_backend.mapper.ArticleMapper
 import douglas.cms_news_backend.model.Article
+import douglas.cms_news_backend.model.Role
 import douglas.cms_news_backend.model.Tag
 import douglas.cms_news_backend.model.enums.ArticleStatus
 import douglas.cms_news_backend.repository.ArticleRepository
+import douglas.cms_news_backend.repository.CategoryRepository
 import douglas.cms_news_backend.service.extensions.hasJournalistOrEditorRole
 import douglas.cms_news_backend.service.validations.validateArticlePermissions
 import douglas.cms_news_backend.utils.AuthUtil
@@ -38,7 +41,8 @@ class ArticleService(
     private val categoryService: CategoryService,
     private val authUtil: AuthUtil,
     private val articleMapper: ArticleMapper,
-    private val cloudinaryService: CloudinaryService
+    private val cloudinaryService: CloudinaryService,
+    private val categoryRepository: CategoryRepository
 ) {
 
     fun generateSlug(word: String): String {
@@ -79,14 +83,14 @@ class ArticleService(
         return PageImpl(articleDtos, pageable, articles.totalElements)
     }
 
-        fun getArticleBySlug(slug: String): ArticleDto? {
+    fun getArticleBySlug(slug: String): ArticleDto? {
         val article = articleRepository.findBySlug(slug).orElse(null)
 
         return articleMapper.mapArticleToDto(article)
     }
 
     fun getArticlesByCategoryName(categoryName: String, pageable: Pageable): Page<ArticleDto> {
-        val category = categoryService.findByName(categoryName)
+        val category = categoryRepository.findByName(categoryName)
             ?: throw EntityNotFoundException("Categoria não encontrada")
         return getPublishedArticlesByCategory(category.id.toString(), pageable)
     }
@@ -158,22 +162,13 @@ class ArticleService(
         return articleMapper.mapArticleToDto(savedArticle)
     }
 
-    fun updateArticle(articleId: String, dto: UpdateArticleDTO, file: MultipartFile): ArticleDto {
+    fun updateArticle(slug: String, dto: UpdateArticleDTO): ArticleDto {
         val currentUser = authUtil.getCurrentUser()
 
-        val article = articleRepository.findById(ObjectId(articleId))
+        val article = articleRepository.findBySlug(slug)
             .orElseThrow { EntityNotFoundException("Artigo não encontrado.") }
 
         validateArticlePermissions(article, currentUser, "editar")
-
-        if (!file.isEmpty) {
-            if (article.picturePublicId.isNotEmpty()) {
-                this.cloudinaryService.deleteFile(article.picturePublicId)
-            }
-            val uploadResult: CloudinaryService.ImageUploadResult = this.cloudinaryService.uploadFile(file)
-            article.coverImage = uploadResult.url
-            article.picturePublicId = uploadResult.publicId
-        }
 
         val updatedArticle = article.copy(
             title = dto.title ?: article.title,
@@ -211,9 +206,9 @@ class ArticleService(
         return articleMapper.mapArticleToDto(upatedArticle)
     }
 
-    fun deleteArticle(articleId: String) {
+    fun deleteArticle(slug: String) {
         val currentUser = authUtil.getCurrentUser()
-        val article = articleRepository.findById(ObjectId(articleId))
+        val article = articleRepository.findBySlug(slug)
             .orElseThrow { EntityNotFoundException("Artigo não encontrado") }
 
         validateArticlePermissions(article, currentUser, "excluir")
@@ -222,7 +217,7 @@ class ArticleService(
             this.cloudinaryService.deleteFile(article.picturePublicId)
         }
 
-        articleRepository.deleteById(ObjectId(articleId))
+        articleRepository.delete(article)
     }
 
     @Scheduled(fixedRate = 300000)
@@ -235,11 +230,52 @@ class ArticleService(
         }
     }
 
+   /* fun getUserArticles(
+        authorId: ObjectId,
+        searchTerm: String,
+        pageable: Pageable
+    ): Page<ArticleDto> {
+        if (searchTerm.isBlank()) {
+            return PageImpl(emptyList(), pageable, 0)
+        }
+
+        val escapedSearchTerm = Pattern.quote(searchTerm)
+
+        val query = Query(
+            Criteria.where("author._id").`is`(authorId)
+                .orOperator(
+                    Criteria.where("title").regex(escapedSearchTerm, "i"),
+                    Criteria.where("content").regex(escapedSearchTerm, "i"),
+                    Criteria.where("subtitle").regex(escapedSearchTerm, "i")
+                )
+        )
+
+        val total = mongoTemplate.count(query, Article::class.java)
+        val articles = mongoTemplate.find(query.with(pageable), Article::class.java)
+
+        val articleDtos = articles.map { article -> articleMapper.mapArticleToDto(article) }
+
+        return PageImpl(articleDtos, pageable, total)
+    } */
+
     fun getUserArticles(authorId: ObjectId, pageable: Pageable): Page<ArticleDto> {
         val articles = articleRepository.findByAuthorId(authorId, pageable)
+        return articles.map { article -> articleMapper.mapArticleToDto(article) }
+    }
 
-        return articles.map { article ->
-            articleMapper.mapArticleToDto(article)
+
+    fun getPublishedArticlesForUser(
+        pageable: Pageable,
+        category: String? = null,
+        tags: List<String>? = null,
+        searchTerm: String? = null
+    ): Page<ArticleDto>? {
+        val currentUser = authUtil.getCurrentUser()
+
+        return if (currentUser.role.name == Role.Values.EDITOR.value) {
+            getPublishedArticles(pageable, category, tags)
+        } else {
+            currentUser.id?.let { getUserArticles(it, pageable) }
         }
     }
 

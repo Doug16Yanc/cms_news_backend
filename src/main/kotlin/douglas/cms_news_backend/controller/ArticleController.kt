@@ -23,7 +23,7 @@ import java.time.LocalDateTime
 @RestController
 @RequestMapping("/articles")
 class ArticleController(
-    private val articleService: ArticleService,
+    private val articleService: ArticleService
 ) {
 
     @PostMapping("/create-article", consumes = ["multipart/form-data"])
@@ -36,34 +36,33 @@ class ArticleController(
         return ResponseEntity.status(HttpStatus.CREATED).body(article)
     }
 
-    @PutMapping("/update-article/{id}")
+    @PutMapping("/update-article/{slug}")
     @PreAuthorize("hasAuthority('JORNALISTA') or hasAuthority('EDITOR')")
     fun updateArticle(
-        @PathVariable id: String,
-        @RequestBody @Valid dto: UpdateArticleDTO,
-        @RequestPart(value = "picture", required = false) picture: MultipartFile
+        @PathVariable slug: String,
+        @RequestBody @Valid article: UpdateArticleDTO
     ): ResponseEntity<ArticleDto> {
-        val article = articleService.updateArticle(id, dto, picture)
-        return ResponseEntity.ok(article)
+        val newArticle = articleService.updateArticle(slug, article)
+        return ResponseEntity.ok(newArticle)
     }
 
-    @DeleteMapping("delete-article/{id}")
+    @DeleteMapping("delete-article/{slug}")
     @PreAuthorize("hasAuthority('JORNALISTA') or hasAuthority('EDITOR')")
     fun deleteArticle(
-        @PathVariable id: String,
+        @PathVariable slug: String,
     ): ResponseEntity<Void> {
-        articleService.deleteArticle(id)
+        articleService.deleteArticle(slug)
         return ResponseEntity.noContent().build()
     }
 
-    @GetMapping("/search-by-author/{authorId}")
+    /*@GetMapping("/search-by-author/{authorId}")
     fun getUserArticles(
         @PathVariable authorId: String,
         @PageableDefault(size = 10, sort = ["publishedDate"], direction = Sort.Direction.DESC) pageable: Pageable
     ): Page<ArticleDto> {
         val objectId = ObjectId(authorId)
-        return articleService.getUserArticles(objectId, pageable)
-    }
+        return articleService.getUserArticles(objectId, , pageable)
+    }*/
 
     @GetMapping("/search")
     fun searchPublishedArticles(
@@ -81,6 +80,17 @@ class ArticleController(
         @PageableDefault(size = 10, sort = ["publishedDate"], direction = Sort.Direction.DESC) pageable: Pageable
     ): Page<ArticleDto> {
         return articleService.getPublishedArticles(pageable, category, tags)
+    }
+
+    @GetMapping("/get-published-for-user")
+    @PreAuthorize("hasAuthority('JORNALISTA') or hasAuthority('EDITOR')")
+    fun getPublishedArticlesForUser(
+        @RequestParam(required = false) category: String?,
+        @RequestParam(required = false) tags: List<String>?,
+        @PageableDefault(size = 10, sort = ["publishedDate"], direction = Sort.Direction.DESC) pageable: Pageable
+    ): Page<ArticleDto> {
+        return articleService.getPublishedArticlesForUser(pageable, category, tags)
+            ?: Page.empty()
     }
 
     @GetMapping("get-by-slug/{slug}")
